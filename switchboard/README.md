@@ -258,7 +258,3 @@ Internally, Switchboard uses a bit manipulation approach to efficiently track st
 - Operations are performed using bitwise operations for maximum efficiency
 - Thread safety is ensured using a channel-based locking mechanism
 - Event notification is handled through a dedicated goroutine
-
-## License
-
-[MIT](LICENSE)
