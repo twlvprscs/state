@@ -38,50 +38,50 @@ The FSM package provides a flexible implementation of finite state machines with
 package main
 
 import (
-    "context"
-    "fmt"
-    
-    "github.com/twlvprscs/state/fsm"
+	"context"
+	"fmt"
+
+	"github.com/twlvprscs/state/fsm"
 )
 
 func main() {
-    // Create states
-    s1 := fsm.NewState("STATE1")
-    s2 := fsm.NewState("STATE2")
-    s3 := fsm.NewState("STATE3")
-    
-    // Define transitions
-    t1 := s1.When("v == a", func(ctx context.Context, v interface{}) (bool, error) {
+	// Create states
+	s1 := fsm.NewState("STATE1")
+	s2 := fsm.NewState("STATE2")
+	s3 := fsm.NewState("STATE3")
+
+	// Define transitions
+	t1 := s1.When("v == a", func(ctx context.Context, v interface{}) (bool, error) {
 		s, _ := v.(string)
-        return s == "a", nil
-    }).Then(s2)
-    
-    t2 := s2.When("v == b", func(ctx context.Context, v interface{}) (bool, error) {
+		return s == "a", nil
+	}).Then(s2)
+
+	t2 := s2.When("v == b", func(ctx context.Context, v interface{}) (bool, error) {
 		s, _ := v.(string)
 		return s == "b", nil
-    }).Then(s3)
-    
-    // Create machine with transitions
-    machine := fsm.NewMachine(fsm.WithTransitions(t1, t2))
-    
-    // Set end states
-    if err := machine.SetEndStates("STATE3"); err != nil {
-		panic(err)
-    }
-    
-    // Use the machine
-    ctx := context.Background()
-    if _, err := machine.Update(ctx, "a"); err != nil { // Transition to STATE2
+	}).Then(s3)
+
+	// Create machine with transitions
+	machine := fsm.NewMachine(fsm.WithTransitions(t1, t2))
+
+	// Set end states
+	if err := machine.SetEndStates("STATE3"); err != nil {
 		panic(err)
 	}
-    if _, err := machine.Update(ctx, "b"); err != nil { // Transition to STATE3
+
+	// Use the machine
+	ctx := context.Background()
+	if _, err := machine.Update(ctx, "a"); err != nil { // Transition to STATE2
 		panic(err)
 	}
-    
-    // Check if we're in an end state
-    if machine.IsEndState() {
-        fmt.Println("Reached end state:", machine.Current().Name())
-    }
+	if _, err := machine.Update(ctx, "b"); err != nil { // Transition to STATE3
+		panic(err)
+	}
+
+	// Check if we're in an end state
+	if machine.IsEndState() {
+		fmt.Println("Reached end state:", machine.Current().Name())
+	}
 }
 ```
 
