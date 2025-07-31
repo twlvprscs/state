@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// PlantUML for this state machine
+// PlantUML for this state Machine
 /*
 @startuml
 
@@ -43,19 +43,19 @@ S10 --> S7 : v == "r"
 S10 --> [*]
 
 @enduml
- */
+*/
 
 func TestMachine(t *testing.T) {
 	var (
-		s1 = NewState("STATE1")
-		s2 = NewState("STATE2")
-		s3 = NewState("STATE3")
-		s4 = NewState("STATE4")
-		s5 = NewState("STATE5")
-		s6 = NewState("STATE6")
-		s7 = NewState("STATE7")
-		s8 = NewState("STATE8")
-		s9 = NewState("STATE9")
+		s1  = NewState("STATE1")
+		s2  = NewState("STATE2")
+		s3  = NewState("STATE3")
+		s4  = NewState("STATE4")
+		s5  = NewState("STATE5")
+		s6  = NewState("STATE6")
+		s7  = NewState("STATE7")
+		s8  = NewState("STATE8")
+		s9  = NewState("STATE9")
 		s10 = NewState("STATE10")
 	)
 
@@ -172,7 +172,7 @@ func TestMachine(t *testing.T) {
 
 	t.Run("validate", func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -184,7 +184,7 @@ func TestMachine(t *testing.T) {
 			}
 		})
 		t.Run("not valid - duplicate state name", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -196,7 +196,7 @@ func TestMachine(t *testing.T) {
 				return false, nil
 			}).Then(s10))
 			if err := m.Validate(); err == nil {
-				t.Fatal("expected invalid machine")
+				t.Fatal("expected invalid Machine")
 			}
 		})
 		t.Run("not valid - missing TO state", func(t *testing.T) {
@@ -205,7 +205,7 @@ func TestMachine(t *testing.T) {
 					t.Fatal("panic expected")
 				}
 			}()
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -221,7 +221,7 @@ func TestMachine(t *testing.T) {
 
 	t.Run("set start", func(t *testing.T) {
 		t.Run("fails - state not found", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -233,7 +233,7 @@ func TestMachine(t *testing.T) {
 
 	t.Run("set end", func(t *testing.T) {
 		t.Run("fails - state not found", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -245,7 +245,7 @@ func TestMachine(t *testing.T) {
 
 	t.Run("is end state", func(t *testing.T) {
 		t.Run("fails - state not found", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -314,7 +314,7 @@ func TestMachine(t *testing.T) {
 
 	t.Run("current", func(t *testing.T) {
 		t.Run("default", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -325,7 +325,7 @@ func TestMachine(t *testing.T) {
 			}
 		})
 		t.Run("explicit", func(t *testing.T) {
-			m := machine{}
+			m := Machine{}
 			for _, tr := range transitions {
 				m.AddTransition(tr)
 			}
@@ -341,7 +341,7 @@ func TestMachine(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		m := machine{}
+		m := Machine{}
 		for _, tr := range transitions {
 			m.AddTransition(tr)
 		}

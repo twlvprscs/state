@@ -1,3 +1,25 @@
+// Package fsm provides a flexible, thread-safe implementation of finite state machines.
+// It allows for defining states, transitions between states, and conditions for those
+// transitions. The implementation is context-aware and thread-safe, making it suitable
+// for concurrent applications.
+//
+// Basic usage:
+//
+//	// Create states
+//	s1 := fsm.NewState("STATE1")
+//	s2 := fsm.NewState("STATE2")
+//
+//	// Define transitions
+//	t1 := s1.When("condition", func(ctx context.Context, v interface{}) (bool, error) {
+//		// Evaluate condition
+//		return true, nil
+//	}).Then(s2)
+//
+//	// Create Machine with transitions
+//	Machine := fsm.NewMachine(fsm.WithTransitions(t1))
+//
+//	// Use the Machine
+//	changed, err := Machine.Update(ctx, someValue)
 package fsm
 
 import (
@@ -10,20 +32,35 @@ import (
 	"github.com/schigh/slice"
 )
 
-type machine struct {
-	mu sync.RWMutex
-	curr atomic.Value
-	start atomic.Value
-	endStates map[uint64]State
-	idx uint32
-	transitions map[uint64][]Transition
-	cancel func()
+// Machine represents a finite state Machine with states and transitions.
+// It maintains the current state, start state, end states, and transitions
+// between states. All operations on the Machine are thread-safe.
+type Machine struct {
+	mu          sync.RWMutex            // Mutex for thread-safety
+	curr        atomic.Value            // Current state
+	start       atomic.Value            // Start state
+	endStates   map[uint64]State        // Map of end state IDs to states
+	idx         uint32                  // Index counter
+	transitions map[uint64][]Transition // Map of state IDs to transitions
+	cancel      func()                  // Cancellation function
 }
 
-type Option func(*machine)
+// Option is a function type used to configure a Machine.
+// It follows the functional options pattern for configuring the FSM.
+type Option func(*Machine)
 
+// WithTransitions creates an Option that adds the specified transitions to the Machine.
+// If transitions are provided, the first state in the first transition is set as the
+// start state of the Machine.
+//
+// Example:
+//
+//	s1 := fsm.NewState("STATE1")
+//	s2 := fsm.NewState("STATE2")
+//	t := s1.When("condition", conditionFunc).Then(s2)
+//	Machine := fsm.NewMachine(fsm.WithTransitions(t))
 func WithTransitions(transitions ...Transition) Option {
-	return func(m *machine) {
+	return func(m *Machine) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 
@@ -43,8 +80,14 @@ func WithTransitions(transitions ...Transition) Option {
 	}
 }
 
-func NewMachine(opts ...Option) *machine {
-	m := machine{}
+// NewMachine creates a new finite state Machine with the specified options.
+// Options can be used to configure the Machine, such as adding transitions.
+//
+// Example:
+//
+//	Machine := fsm.NewMachine(fsm.WithTransitions(t1, t2))
+func NewMachine(opts ...Option) *Machine {
+	m := Machine{}
 	for _, f := range opts {
 		f(&m)
 	}
@@ -52,14 +95,25 @@ func NewMachine(opts ...Option) *machine {
 	return &m
 }
 
-func (m *machine) Graph() {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+// Graph generates a visual representation of the state Machine.
+// This is a placeholder for future implementation.
+//func (m *Machine) Graph() {
+//	m.mu.RLock()
+//	defer m.mu.RUnlock()
+//
+//	// TODO: traverse the fsm and generate graph
+//}
 
-	// TODO: traverse the fsm and generate graph
-}
-
-func (m *machine) SetStart(name string) error {
+// SetStart sets the start state of the Machine by name.
+// It returns an error if no state with the given name is found.
+// The start state is also set as the current state.
+//
+// Example:
+//
+//	if err := Machine.SetStart("IDLE"); err != nil {
+//	    // handle error
+//	}
+func (m *Machine) SetStart(name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -85,7 +139,15 @@ func (m *machine) SetStart(name string) error {
 	return nil
 }
 
-func (m *machine) Reset() error {
+// Reset resets the Machine to its start state.
+// It returns an error if the Machine has no start state.
+//
+// Example:
+//
+//	if err := Machine.Reset(); err != nil {
+//	    // handle error
+//	}
+func (m *Machine) Reset() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -99,7 +161,16 @@ func (m *machine) Reset() error {
 	return nil
 }
 
-func (m *machine) SetEndStates(names  ...string) error {
+// SetEndStates sets the end states of the Machine by name.
+// It returns an error if any of the specified state names are not found.
+// End states are used to determine when the Machine has reached a terminal state.
+//
+// Example:
+//
+//	if err := Machine.SetEndStates("SUCCESS", "FAILURE"); err != nil {
+//	    // handle error
+//	}
+func (m *Machine) SetEndStates(names ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -128,11 +199,18 @@ func (m *machine) SetEndStates(names  ...string) error {
 		return fmt.Errorf("invalid state: '%s'", names[idx])
 	}
 
-
 	return nil
 }
 
-func (m *machine) IsEndState() bool {
+// IsEndState checks if the current state is an end state.
+// Returns true if the current state is one of the end states, false otherwise.
+//
+// Example:
+//
+//	if Machine.IsEndState() {
+//	    // handle end state
+//	}
+func (m *Machine) IsEndState() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -147,7 +225,15 @@ func (m *machine) IsEndState() bool {
 	return ok
 }
 
-func (m *machine) AddTransition(t Transition) {
+// AddTransition adds a transition to the Machine.
+// If the Machine has no transitions, the from state of the transition is set as the start state.
+// Panics if the transition does not have both from and to states.
+//
+// Example:
+//
+//	t := s1.When("condition", conditionFunc).Then(s2)
+//	Machine.AddTransition(t)
+func (m *Machine) AddTransition(t Transition) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -165,7 +251,20 @@ func (m *machine) AddTransition(t Transition) {
 	m.transitions[id] = append(m.transitions[id], t)
 }
 
-func (m *machine) Validate() error {
+// Validate validates the Machine configuration.
+// It checks that:
+// - The Machine has a start state
+// - All transitions have from and to states
+// - All state names are unique
+//
+// Returns an error if any of these conditions are not met.
+//
+// Example:
+//
+//	if err := Machine.Validate(); err != nil {
+//	    // handle error
+//	}
+func (m *Machine) Validate() error {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -199,7 +298,14 @@ func (m *machine) Validate() error {
 	return nil
 }
 
-func (m *machine) Current() State {
+// Current returns the current state of the Machine.
+// If the current state is not set, it returns the start state.
+//
+// Example:
+//
+//	currentState := Machine.Current()
+//	fmt.Println("Current state:", currentState.Name())
+func (m *Machine) Current() State {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -210,7 +316,26 @@ func (m *machine) Current() State {
 	return curr
 }
 
-func (m *machine) Update(ctx context.Context, value interface{}) (bool, error) {
+// Update updates the Machine state based on the provided value.
+// It evaluates all transitions from the current state and transitions to the first one
+// whose condition evaluates to true.
+//
+// Returns:
+// - bool: true if the state changed, false otherwise
+// - error: any error that occurred during the update
+//
+// The update respects context cancellation.
+//
+// Example:
+//
+//	changed, err := Machine.Update(ctx, "some-value")
+//	if err != nil {
+//	    // handle error
+//	}
+//	if changed {
+//	    fmt.Println("State changed to:", Machine.Current().Name())
+//	}
+func (m *Machine) Update(ctx context.Context, value interface{}) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
