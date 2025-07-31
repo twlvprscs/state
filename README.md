@@ -52,23 +52,31 @@ func main() {
     
     // Define transitions
     t1 := s1.When("v == a", func(ctx context.Context, v interface{}) (bool, error) {
-        return v == "a", nil
+		s, _ := v.(string)
+        return s == "a", nil
     }).Then(s2)
     
     t2 := s2.When("v == b", func(ctx context.Context, v interface{}) (bool, error) {
-        return v == "b", nil
+		s, _ := v.(string)
+		return s == "b", nil
     }).Then(s3)
     
     // Create machine with transitions
     machine := fsm.NewMachine(fsm.WithTransitions(t1, t2))
     
     // Set end states
-    machine.SetEndStates("STATE3")
+    if err := machine.SetEndStates("STATE3"); err != nil {
+		panic(err)
+    }
     
     // Use the machine
     ctx := context.Background()
-    machine.Update(ctx, "a") // Transition to STATE2
-    machine.Update(ctx, "b") // Transition to STATE3
+    if _, err := machine.Update(ctx, "a"); err != nil { // Transition to STATE2
+		panic(err)
+	}
+    if _, err := machine.Update(ctx, "b"); err != nil { // Transition to STATE3
+		panic(err)
+	}
     
     // Check if we're in an end state
     if machine.IsEndState() {
